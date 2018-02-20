@@ -10,6 +10,6 @@ Simply download and unzip to a folder of your choice. You need to have installed
 # How to use
 1) Create the dinosaur TMDs and TKLs you want to merge.
 2) Press `Win + R` and type `cmd` to run a command line window.
-3) Use the `cd` command to navigate to the script.
+3) Use the `cd` command to navigate to the folder containing the script.
 4) Alter the settings of the script (end of the .py file, see comments there)
 5) Run it by typing `python tkl-merger.py`.

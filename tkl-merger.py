@@ -11,13 +11,12 @@ import numpy as np
 from struct import iter_unpack, unpack_from, pack
 
 
-def save_tkl(in_path, out_path, loc_lut, rot_lut):
-	with open(in_path, 'rb') as f:
+def save_tkl(dir_models, dir_out, tkl_ref, loc_lut, rot_lut):
+	with open(os.path.join(dir_models, tkl_ref+".tkl"), 'rb') as f:
 		tklstream = f.read()
 	tkl_b00, tkl_b01, tkl_b02, tkl_b03, tkl_remaining_bytes, tkl_name, tkl_b04, tkl_b05, tkl_b06, tkl_b07, tkl_b08, tkl_b09, tkl_b10, tkl_b11, tkl_b12, tkl_b13, num_loc, num_rot, tkl_i00, tkl_i01, tkl_i02, tkl_i03, tkl_len_data	=  unpack_from("4B I 6s 10B 2I 5I", tklstream, 4)
 	
-	print("\nWriting",out_path)
-	tkl_ref = os.path.basename(out_path).split(".")[0]
+	print("\nWriting",tkl_ref,"to",dir_out)
 	tkl_locs = [pack("3f", *l) for l in loc_lut]
 	tkl_quats = [pack("4f", *q) for q in rot_lut]
 	
@@ -27,7 +26,9 @@ def save_tkl(in_path, out_path, loc_lut, rot_lut):
 	#tkl_len_data = len(tkl_locs)*16 + len(tkl_quats)*12
 
 	tkl_header = pack("4s 4B I 6s 10B 2I 5I", b"TPKL", tkl_b00, tkl_b01, tkl_b02, tkl_b03, tkl_remaining_bytes, tkl_ref.encode("utf-8"), tkl_b04, tkl_b05, tkl_b06, tkl_b07, tkl_b08, tkl_b09, tkl_b10, tkl_b11, tkl_b12, tkl_b13, len(tkl_locs), len(tkl_quats), tkl_i00, tkl_i01, tkl_i02, tkl_i03, tkl_len_data)
-	with open(out_path, 'wb') as f:
+	
+	if not os.path.exists(dir_out): os.makedirs(dir_out)
+	with open(os.path.join(dir_out, tkl_ref+".tkl"), 'wb') as f:
 		f.write(b"".join( (tkl_header, b"".join(tkl_locs), b"".join(tkl_quats) ) ))
 
 def read_tkl(in_path):
@@ -105,7 +106,7 @@ def get_used_keys(filepath):
 	return tkl_path, loc_indices, rot_indices
 
 def save_new_keys(in_path, out_path, tkl_ref_out, loc_inds_new=[], rot_inds_new=[]):
-	print("\nSaving",os.path.basename(in_path))
+	print("Saving",os.path.basename(in_path))
 	with open(in_path, 'rb') as f:
 		datastream = f.read()
 	
@@ -201,13 +202,16 @@ def work(dir_models, dir_out, dinos, boss_tkl):
 	dino_to_tmds = {}
 	for dino in dinos:
 		dino_to_tmds[dino] = []
-		
+	
+	print("Dinos:")
 	for file in os.listdir(dir_models):
 		for dino in dinos:
-			if dino.lower() in file.lower():
+			f_l = file.lower()
+			if dino.lower() in f_l and f_l.endswith(".tmd"):
 				dino_to_tmds[dino].append(file)
+				print(dino, ">",file)
 				break
-	print(dino_to_tmds)
+	print("boss_tkl:",boss_tkl)
 
 	tkl_to_luts = {}
 	tmd_to_keys={}
@@ -249,6 +253,7 @@ def work(dir_models, dir_out, dinos, boss_tkl):
 	#so the other 3 resolutions are direct copies of the anim data
 	num_locs_in = len(locs_all)
 	num_rots_in = len(rots_all)
+	print("\nKey Stats:")
 	print("Input locs:",num_locs_in)
 	print("Output locs:",num_locs_out)
 	print("Input rots:",num_rots_in)
@@ -258,26 +263,24 @@ def work(dir_models, dir_out, dinos, boss_tkl):
 	min_rots_out = min( num_rots_in, num_rots_out)
 	print("min locs:",min_locs_out)
 	print("min rots:",min_rots_out)
-	print("Reducing keys...")
+	print("\nReducing keys...")
 	#create the reduced LUTs
 	final_locs_lut, distortion = kmeans( locs_all, min_locs_out, thresh=1e-04,iter=5, check_finite=False )
 	final_rots_lut, distortion = kmeans( rots_all, min_rots_out, thresh=1e-04, iter=2, check_finite=False )
 	
-	tkl_ref_out = "out"
-	tkl_ref_out = boss_tkl
-	save_tkl( os.path.join(dir_models, boss_tkl+".tkl"), os.path.join(dir_out, tkl_ref_out+".tkl"), final_locs_lut, final_rots_lut)
+	save_tkl( dir_models, dir_out, boss_tkl, final_locs_lut, final_rots_lut)
 
 	#now find closest matching keys for each of our TMDs
 	#and finally replace all indices with the new indices
 	for tmd_path, keyframes in tmd_to_keys.items():
-		print("Reassigning",os.path.basename(tmd_path))
+		print("\nReassigning",os.path.basename(tmd_path))
 		loc_keys, rot_keys = keyframes
 		
 		loc_indices_new, distance = vq( loc_keys, final_locs_lut)
 		rot_indices_new, distance = vq( rot_keys, final_rots_lut)
 
 		tmd_name = os.path.basename(tmd_path)
-		save_new_keys(tmd_path, os.path.join(dir_out, tmd_name), tkl_ref_out, loc_indices_new, rot_indices_new )
+		save_new_keys(tmd_path, os.path.join(dir_out, tmd_name), boss_tkl, loc_indices_new, rot_indices_new )
 
 		
 #path in which all input models and tkl files are stored

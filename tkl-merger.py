@@ -205,8 +205,8 @@ def work(dir_models, dir_out, dinos, boss_tkl):
 	
 	print("Dinos:")
 	for file in os.listdir(dir_models):
+		f_l = file.lower()
 		for dino in dinos:
-			f_l = file.lower()
 			if dino.lower() in f_l and f_l.endswith(".tmd"):
 				dino_to_tmds[dino].append(file)
 				print(dino, ">",file)

@@ -24,7 +24,6 @@ class MainWindow(QtWidgets.QMainWindow):
 		self.names_to_full_paths = {}
 		self.tmd_to_tkl = {}
 
-		# Just some button connected to `plot` method
 		self.b_add = QtWidgets.QPushButton('Load TMDs')
 		self.b_add.setToolTip("Load TMD files you want to merge.")
 		self.b_add.clicked.connect(self.add_tmds)
@@ -76,7 +75,7 @@ class MainWindow(QtWidgets.QMainWindow):
 	def add_tmds(self):
 		file_src = QtWidgets.QFileDialog.getOpenFileNames(self, 'Load TMDs', self.dir_models, "TMD files (*.tmd)")[0]
 		for tmd_path in file_src:
-			self.dir_models, tmd_name = os.path.split(tmd_path)
+			self.dir_models, tmd_name = os.path.split(tmd_path[:-4])
 			if tmd_name not in self.tmd_names:
 				self.tmd_names.append(tmd_name)
 				self.tmd_widget.addItem(tmd_name)

@@ -9,6 +9,7 @@ from scipy.cluster.vq import vq, kmeans
 import os
 import numpy as np
 from struct import iter_unpack, unpack_from, pack
+import config_util
 
 
 def save_tkl(boss_tkl_in_path, dir_out, tkl_ref, loc_lut, rot_lut):
@@ -272,22 +273,12 @@ def work(tmd_paths, dir_out, boss_tkl):
 
 
 if __name__ == '__main__':
-	#path in which all input models and tkl files are stored
-	dir_models = "C:/Program Files (x86)/Universal Interactive/Blue Tongue Software/Jurassic Park Operation Genesis/JPOG/Data/Models"
-	#path in which all ouput will be created
-	dir_out = "C:/Program Files (x86)/Universal Interactive/Blue Tongue Software/Jurassic Park Operation Genesis/JPOG/Data/test"
-
-	#the dinos you want to merge into one digsite
-	dinos = "anky_hi", "alberto_test", "pachy_hi"
-
-	#the name of the output TKL file (must be used by at least one of the dinos you want to merge; will determine how many keys you may use)
-	boss_tkl = "Dhbja"
-	
+	cfg = config_util.read_config("config.ini")
 	tmd_paths = []
-	for file in os.listdir(dir_models):
+	for file in os.listdir(cfg["dir_models"]):
 		f_l = file.lower()
-		for dino in dinos:
+		for dino in cfg["dinos"]:
 			if dino.lower() in f_l and f_l.endswith(".tmd"):
-				tmd_paths.append(os.path.join(dir_models, file))
+				tmd_paths.append(os.path.join(cfg["dir_models"], file))
 				break
-	work(tmd_paths, dir_out, boss_tkl)
+	work(tmd_paths, cfg["dir_out"], cfg["boss_tkl"])

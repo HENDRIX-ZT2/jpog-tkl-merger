@@ -2,6 +2,7 @@ import os
 import sys
 from PyQt5 import QtWidgets, QtGui, QtCore
 import tkl_merger
+import config_util
 
 class MainWindow(QtWidgets.QMainWindow):
 	def __init__(self, parent=None):
@@ -16,11 +17,12 @@ class MainWindow(QtWidgets.QMainWindow):
 			self.setWindowIcon(QtGui.QIcon(os.path.join(scriptDir,'icon.png')))
 		except: pass
 		
-		self.dir_models = "C:/Program Files (x86)/Universal Interactive/Blue Tongue Software/Jurassic Park Operation Genesis/JPOG/Data/Models"
-		self.dir_out = "C:\\"
-		self.dinos = []
+		self.cfg = config_util.read_config("config.ini")
+		# self.cfg["dir_models"] = "C:/Program Files (x86)/Universal Interactive/Blue Tongue Software/Jurassic Park Operation Genesis/JPOG/Data/Models"
+		# self.cfg["dir_out"] = "C:\\"
+		# self.dinos = []
 		self.tmd_names = []
-		self.boss_tkl = ""
+		# self.cfg["boss_tkl"] = ""
 		self.names_to_full_paths = {}
 		self.tmd_to_tkl = {}
 
@@ -55,16 +57,16 @@ class MainWindow(QtWidgets.QMainWindow):
 		self.central_widget.setLayout(self.qgrid)
 		
 	def run(self):
-		self.dir_out = QtWidgets.QFileDialog.getExistingDirectory(self, 'Output folder', self.dir_out, )
-		if self.dir_out:
-			tkl_merger.work([ self.names_to_full_paths[tmd_name] for tmd_name in self.tmd_names], self.dir_out, self.boss_tkl)
+		self.cfg["dir_out"] = QtWidgets.QFileDialog.getExistingDirectory(self, 'Output folder', self.cfg["dir_out"], )
+		if self.cfg["dir_out"]:
+			tkl_merger.work([ self.names_to_full_paths[tmd_name] for tmd_name in self.tmd_names], self.cfg["dir_out"], self.cfg["boss_tkl"])
 			print("Done!")
 	
 	def set_boss_tkl(self):
-		self.boss_tkl = self.c_tkl.currentText()
+		self.cfg["boss_tkl"] = self.c_tkl.currentText()
 	
 	def update_tkl_combo(self):
-		boss_tkl = self.boss_tkl
+		boss_tkl = self.cfg["boss_tkl"]
 		self.c_tkl.clear()
 		self.c_tkl.addItems(sorted(set(self.tmd_to_tkl.values())))
 		#see if the old tkl boss is still in existance, then update it
@@ -73,9 +75,9 @@ class MainWindow(QtWidgets.QMainWindow):
 			self.c_tkl.setCurrentIndex(active_index)
 	
 	def add_tmds(self):
-		file_src = QtWidgets.QFileDialog.getOpenFileNames(self, 'Load TMDs', self.dir_models, "TMD files (*.tmd)")[0]
+		file_src = QtWidgets.QFileDialog.getOpenFileNames(self, 'Load TMDs', self.cfg["dir_models"], "TMD files (*.tmd)")[0]
 		for tmd_path in file_src:
-			self.dir_models, tmd_name = os.path.split(tmd_path[:-4])
+			self.cfg["dir_models"], tmd_name = os.path.split(tmd_path[:-4])
 			if tmd_name not in self.tmd_names:
 				self.tmd_names.append(tmd_name)
 				self.tmd_widget.addItem(tmd_name)
@@ -130,3 +132,4 @@ if __name__ == '__main__':
 	win = MainWindow()
 	win.show()
 	appQt.exec_()
+config_util.write_config("config.ini", win.cfg)
